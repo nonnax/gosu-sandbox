@@ -14,16 +14,17 @@ class Body
   def initialize(name, distance, _eccentricity, _inclination, velocity, mass)
     angle = Math.random(0, 1) * 2 * Math::PI
     # -- Ensure counter-clockwise rotation in the inverted y-axis system
-    if angle < Math::PI
-        angle = angle + Math::PI
-    else
-        angle = angle - Math::PI
-    end
+    # if angle < Math::PI
+    #     angle = angle + Math::PI
+    # else
+    #     angle = angle - Math::PI
+    # end
     @name = name
     @distance = distance
     @pos = Vec[distance * Math.cos(angle), distance * Math.sin(angle)]
     #ccw rotation
     @vel = Vec[velocity * Math.sin(angle), -velocity * Math.cos(angle)]
+    @initvel = @vel.clone
     @mass = mass
     @rmin = 10 ^ 5
     @rmax = 0
@@ -31,26 +32,22 @@ class Body
   end
 
   def applyForce(sun, dt)
-     ax, ay = 0, 0 # -- acceleration components
+     d = sun.pos - pos
+     dist2 = d.mag2
 
-     dx = sun.pos.x - pos.x
-     dy = sun.pos.y - pos.y
-     # d = sun.pos - pos
-     dist = Math.sqrt(dx**2 + dy**2)
-
-     force = (G * sun.mass * mass) / (dist**2)
-     angle =  Math.atan2(dy, dx)
+     force = (G * sun.mass * mass) / (dist2)
+     angle =  d.heading
 
      ax = force * Math.cos(angle) / mass
      ay = force * Math.sin(angle) / mass
 
-     speed = $speed
-     vel.x = vel.x + ax * dt * speed
-     vel.y = vel.y + ay * dt * speed
-
-     @pos.x = @pos.x + vel.x * dt  * speed
-     @pos.y = @pos.y + vel.y * dt  * speed
-     @distance = dist
+     @vel += Vec[ax, ay] * (dt * $speed)
+     @distance = d.mag
+     move(dt)
+     self
+  end
+  def move(dt)
+     @pos += @vel * (dt * $speed)
      self
   end
   def x
